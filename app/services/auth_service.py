@@ -2,8 +2,9 @@
 认证服务模块 - Supabase Auth
 """
 from typing import Dict, Any, Optional
-from supabase import create_client, Client
+from supabase import Client
 from app.config import Settings
+from app.database import get_supabase_client
 
 
 class AuthService:
@@ -11,10 +12,8 @@ class AuthService:
     
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.supabase: Client = create_client(
-            settings.supabase_url,
-            settings.supabase_key
-        )
+        # 使用单例客户端，避免每次创建新连接
+        self.supabase: Client = get_supabase_client(settings)
     
     async def sign_up(self, email: str, password: str) -> Dict[str, Any]:
         """

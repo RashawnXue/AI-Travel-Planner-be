@@ -2,8 +2,9 @@
 行程服务模块 - Supabase Database
 """
 from typing import Dict, Any, List, Optional
-from supabase import create_client, Client
+from supabase import Client
 from app.config import Settings
+from app.database import get_supabase_client
 
 
 class PlanService:
@@ -11,10 +12,8 @@ class PlanService:
     
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.supabase: Client = create_client(
-            settings.supabase_url,
-            settings.supabase_key
-        )
+        # 使用单例客户端，避免每次创建新连接
+        self.supabase: Client = get_supabase_client(settings)
     
     async def get_plans_by_user(
         self, 
@@ -22,7 +21,7 @@ class PlanService:
         access_token: str
     ) -> List[Dict[str, Any]]:
         """
-        获取用户的所有行程
+        获取用户的所有行程（优化：仅查询列表需要的字段）
         
         Args:
             user_id: 用户 ID
@@ -35,6 +34,7 @@ class PlanService:
             # 设置 token 进行 RLS 认证
             self.supabase.auth.set_session(access_token, access_token)
             
+            # 优化：只查询列表需要的字段，不查询大字段如 ai_response
             response = self.supabase.table("travel_plans")\
                 .select("id, title, destination, days, budget, start_date, created_at")\
                 .eq("user_id", user_id)\

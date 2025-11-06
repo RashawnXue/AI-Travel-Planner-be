@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     # JWT 配置（用于 session token）
     jwt_secret_key: str = "your-secret-key-change-in-production"
     jwt_algorithm: str = "HS256"
-    jwt_expire_minutes: int = 60 * 24 * 7  # 7 天
+    jwt_expire_minutes: int = 60 * 24 * 30  # 30 天
     
     # CORS
     cors_origins: str = "http://localhost:5173,http://localhost"

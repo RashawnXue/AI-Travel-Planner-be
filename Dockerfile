@@ -16,9 +16,12 @@ COPY requirements.txt .
 # 安装 Python 依赖
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 复制应用代码
+# 先复制应用代码（这样代码改变不会影响依赖安装缓存）
 COPY app/ ./app/
 COPY main.py .
+
+# 最后复制 .env 文件（放在最后，确保每次 .env 改变都会重新复制）
+COPY .env .env
 
 # 暴露端口
 EXPOSE 8000

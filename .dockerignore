@@ -1,0 +1,55 @@
+# Git 相关
+.git
+.gitignore
+.gitattributes
+
+# Python 相关
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+venv/
+env/
+.venv
+
+# IDE 相关
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# 测试相关
+.pytest_cache
+.coverage
+htmlcov
+.tox
+
+# 文档
+*.md
+!README.md
+docs/
+
+# 日志
+*.log
+logs/
+
+# 临时文件
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# 开发工具
+.editorconfig
+
+# 注意：.env 文件需要被复制到镜像中（开发环境）
+# 生产环境应该使用 docker-compose 或 K8s 的环境变量
+# 如果不想复制 .env，取消下面这行的注释：
+# .env
