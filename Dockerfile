@@ -1,5 +1,5 @@
 # 基于官方 Python 3.10 slim 镜像
-FROM python:3.10-slim
+FROM crpi-56emzhvxytc9g4y8.cn-hangzhou.personal.cr.aliyuncs.com/njuse/python:3.10-slim
 
 # 设置工作目录
 WORKDIR /app
