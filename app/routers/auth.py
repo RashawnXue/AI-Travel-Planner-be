@@ -15,6 +15,7 @@ class RegisterRequest(BaseModel):
     """注册请求"""
     email: EmailStr
     password: str
+    username: str
 
 
 class LoginRequest(BaseModel):
@@ -58,7 +59,8 @@ async def register(
         auth_service = AuthService(settings)
         result = await auth_service.sign_up(
             email=request.email,
-            password=request.password
+            password=request.password,
+            username=request.username
         )
         return AuthResponse(**result, error=None)
     except Exception as e:
@@ -125,6 +127,7 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         "user": {
             "id": current_user["id"],
             "email": current_user["email"],
+            "username": current_user.get("username", ""),
             "created_at": current_user.get("created_at")
         },
         "error": None

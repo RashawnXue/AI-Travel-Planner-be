@@ -15,39 +15,44 @@ class AuthService:
         # 使用单例客户端，避免每次创建新连接
         self.supabase: Client = get_supabase_client(settings)
     
-    async def sign_up(self, email: str, password: str) -> Dict[str, Any]:
+    async def sign_up(self, email: str, password: str, username: str) -> Dict[str, Any]:
         """
         用户注册
         
         Args:
             email: 用户邮箱
             password: 密码
+            username: 用户名
             
         Returns:
             包含用户信息和 session 的字典
         """
         try:
+            # 直接尝试注册，让 Supabase 处理邮箱重复的情况
             response = self.supabase.auth.sign_up({
                 "email": email,
-                "password": password
+                "password": password,
+                "options": {
+                    # 将用户名存储到 user_metadata
+                    "data": {
+                        "username": username
+                    }
+                }
             })
             
-            if response.user:
+            if response.user and response.session:
                 user_id = response.user.id
                 user_email = response.user.email
                 
-                # 从 user_profiles 表获取用户名
-                username = None
+                # 尝试插入或更新 user_profiles 表中的用户名
                 try:
-                    profile_response = self.supabase.table('user_profiles').select('username').eq('id', user_id).single().execute()
-                    if profile_response.data:
-                        username = profile_response.data.get('username')
-                except:
-                    pass
-                
-                # 如果没有用户名，使用邮箱前缀作为备用
-                if not username:
-                    username = user_email.split('@')[0] if user_email else None
+                    self.supabase.table('user_profiles').upsert({
+                        'id': user_id,
+                        'username': username
+                    }).execute()
+                except Exception as profile_error:
+                    # 如果插入失败，记录但不中断注册流程
+                    print(f"插入用户资料失败: {str(profile_error)}")
                 
                 return {
                     "user": {
@@ -57,16 +62,25 @@ class AuthService:
                         "created_at": response.user.created_at
                     },
                     "session": {
-                        "access_token": response.session.access_token if response.session else None,
-                        "refresh_token": response.session.refresh_token if response.session else None,
-                        "expires_at": response.session.expires_at if response.session else None
-                    } if response.session else None
+                        "access_token": response.session.access_token,
+                        "refresh_token": response.session.refresh_token,
+                        "expires_at": response.session.expires_at
+                    }
                 }
             else:
-                raise Exception("注册失败，未返回用户信息")
+                raise Exception("注册失败，未返回用户信息或会话信息，请确认已关闭邮箱验证")
                 
         except Exception as e:
-            raise Exception(f"注册失败: {str(e)}")
+            error_msg = str(e)
+            # 处理 Supabase 返回的常见错误
+            if "already registered" in error_msg.lower() or "already exists" in error_msg.lower():
+                raise Exception("该邮箱已被注册，请使用其他邮箱或直接登录")
+            elif "email" in error_msg.lower() and "invalid" in error_msg.lower():
+                raise Exception("邮箱格式不正确")
+            elif "password" in error_msg.lower():
+                raise Exception("密码不符合要求")
+            else:
+                raise Exception(f"注册失败: {error_msg}")
     
     async def sign_in(self, email: str, password: str) -> Dict[str, Any]:
         """
@@ -98,9 +112,9 @@ class AuthService:
                 except:
                     pass
                 
-                # 如果没有用户名，使用邮箱前缀作为备用
+                # 如果仍然没有用户名，设为 None 或空字符串
                 if not username:
-                    username = user_email.split('@')[0] if user_email else None
+                    username = ""
                 
                 return {
                     "user": {
@@ -159,15 +173,17 @@ class AuthService:
                 email = response.user.email
                 
                 # 从 user_profiles 表获取用户名
-                profile_response = self.supabase.table('user_profiles').select('username').eq('id', user_id).single().execute()
-                
                 username = None
-                if profile_response.data:
-                    username = profile_response.data.get('username')
+                try:
+                    profile_response = self.supabase.table('user_profiles').select('username').eq('id', user_id).single().execute()
+                    if profile_response.data:
+                        username = profile_response.data.get('username')
+                except:
+                    pass
                 
-                # 如果没有用户名，使用邮箱前缀作为备用
+                # 如果仍然没有用户名，设为空字符串
                 if not username:
-                    username = email.split('@')[0] if email else None
+                    username = ""
                 
                 return {
                     "id": user_id,
